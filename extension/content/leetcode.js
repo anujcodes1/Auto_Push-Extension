@@ -1,5 +1,5 @@
 // ============================================================
-// AutoPush - LeetCode Content Script v3 (Fixed)
+// AutoPush - LeetCode Content Script v4
 // ============================================================
 
 (function () {
@@ -24,73 +24,53 @@
     return match ? match[1] : null;
   }
 
-  // ✅ FIXED: Use GraphQL instead of broken REST API
-  async function checkLatestSubmission(slug) {
+  // Get submission ID from current URL
+  function getSubmissionIdFromURL() {
+    const match = window.location.pathname.match(/\/submissions\/(\d+)/);
+    return match ? match[1] : null;
+  }
+
+  // Fetch submission details by ID using GraphQL
+  async function getSubmissionById(submissionId) {
     try {
       const resp = await fetch("https://leetcode.com/graphql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          query: `query recentSubmissions($titleSlug: String!) {
-            submissionList(offset: 0, limit: 1, questionSlug: $titleSlug) {
-              submissions {
-                id
-                statusDisplay
-                lang
-                runtime
-                memory
-                code
-                timestamp
+          query: `query submissionDetails($submissionId: Int!) {
+            submissionDetails(submissionId: $submissionId) {
+              statusCode
+              lang { verboseName }
+              runtimeDisplay
+              memoryDisplay
+              code
+              question {
+                questionId
+                title
+                titleSlug
+                difficulty
+                topicTags { name }
               }
             }
           }`,
-          variables: { titleSlug: slug },
+          variables: { submissionId: parseInt(submissionId) },
         }),
       });
 
       if (!resp.ok) return null;
       const data = await resp.json();
-      const subs = data?.data?.submissionList?.submissions;
-      if (!subs || subs.length === 0) return null;
-
-      const s = subs[0];
-      return {
-        id: s.id,
-        status_display: s.statusDisplay,
-        lang: s.lang,
-        runtime: s.runtime,
-        memory: s.memory,
-        code: s.code,
-      };
+      return data?.data?.submissionDetails || null;
     } catch (e) {
-      console.error("[AutoPush] GraphQL submission fetch error:", e);
+      console.error("[AutoPush] submissionDetails fetch error:", e);
       return null;
-    }
-  }
-
-  async function getProblemMeta(slug) {
-    try {
-      const resp = await fetch("https://leetcode.com/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          query: "query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId title difficulty topicTags { name } } }",
-          variables: { titleSlug: slug },
-        }),
-      });
-      const json = await resp.json();
-      return (json.data && json.data.question) ? json.data.question : {};
-    } catch (e) {
-      return {};
     }
   }
 
   function safeSendMessage(payload) {
     try {
       if (chrome && chrome.runtime && chrome.runtime.id) {
-        chrome.runtime.sendMessage({ type: "SOLUTION_ACCEPTED", payload: payload });
+        chrome.runtime.sendMessage({ type: "SOLUTION_ACCEPTED", payload });
         console.log("[AutoPush] Solution sent to background successfully!");
       } else {
         console.warn("[AutoPush] Extension context lost. Please refresh the page.");
@@ -100,84 +80,86 @@
     }
   }
 
+  // Watch for URL change to /submissions/<id>/
   async function watchForAccepted() {
     if (isWatching) return;
     isWatching = true;
 
-    var slug = getProblemSlug();
-    if (!slug) {
-      isWatching = false;
-      return;
-    }
+    const slug = getProblemSlug();
+    if (!slug) { isWatching = false; return; }
 
     console.log("[AutoPush] Watching for Accepted on: " + slug);
 
-    var interval = setInterval(async function () {
-      var submission = await checkLatestSubmission(slug);
-      if (!submission) return;
-      if (submission.id === lastSubmissionId) return;
-      if (submission.status_display !== "Accepted") {
-        console.log("[AutoPush] Verdict: " + submission.status_display + " - still waiting...");
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      if (attempts > 60) { // 3 min timeout
+        clearInterval(interval);
+        isWatching = false;
         return;
       }
 
-      lastSubmissionId = submission.id;
+      const submissionId = getSubmissionIdFromURL();
+      if (!submissionId) return;
+      if (submissionId === lastSubmissionId) return;
+
+      // URL has submission ID — fetch details
+      const details = await getSubmissionById(submissionId);
+      if (!details) return;
+
+      // statusCode 10 = Accepted on LeetCode
+      if (details.statusCode !== 10) {
+        console.log("[AutoPush] Status code: " + details.statusCode + " - not accepted yet");
+        return;
+      }
+
+      lastSubmissionId = submissionId;
       clearInterval(interval);
       isWatching = false;
 
-      console.log("[AutoPush] Accepted! Fetching metadata...");
-      var meta = await getProblemMeta(slug);
+      console.log("[AutoPush] Accepted! Building payload...");
 
-      var tags = [];
-      if (meta.topicTags) {
-        for (var i = 0; i < meta.topicTags.length; i++) {
-          tags.push(meta.topicTags[i].name);
-        }
-      }
+      const q = details.question || {};
+      const tags = (q.topicTags || []).map(t => t.name);
+      const lang = details.lang?.verboseName || "unknown";
 
-      var payload = {
+      const payload = {
         platform: "leetcode",
-        problemId: meta.questionId || "unknown",
-        title: meta.title || slug,
-        slug: slug,
-        difficulty: meta.difficulty || "Unknown",
-        tags: tags,
-        language: submission.lang,
-        extension: getLangExtension(submission.lang),
-        code: submission.code,
+        problemId: q.questionId || "unknown",
+        title: q.title || slug,
+        slug: q.titleSlug || slug,
+        difficulty: q.difficulty || "Unknown",
+        tags,
+        language: lang,
+        extension: getLangExtension(lang),
+        code: details.code,
         submittedAt: new Date().toISOString(),
-        runtime: submission.runtime,
-        memory: submission.memory,
+        runtime: details.runtimeDisplay,
+        memory: details.memoryDisplay,
       };
 
       safeSendMessage(payload);
-
     }, 3000);
-
-    setTimeout(function () {
-      clearInterval(interval);
-      isWatching = false;
-    }, 600000);
   }
 
   function attachSubmitListener() {
     document.addEventListener("click", function (e) {
-      var btn = null;
+      let btn = null;
 
-      var selectors = [
+      const selectors = [
         '[data-e2e-locator="console-submit-button"]',
         'button[data-e2e-locator="console-submit-button"]',
       ];
 
-      for (var i = 0; i < selectors.length; i++) {
-        btn = e.target.closest(selectors[i]);
+      for (const sel of selectors) {
+        btn = e.target.closest(sel);
         if (btn) break;
       }
 
       if (!btn) {
-        var el = e.target;
+        let el = e.target;
         while (el && el !== document.body) {
-          if (el.tagName === "BUTTON" && el.textContent && el.textContent.trim() === "Submit") {
+          if (el.tagName === "BUTTON" && el.textContent?.trim() === "Submit") {
             btn = el;
             break;
           }
@@ -193,5 +175,5 @@
   }
 
   attachSubmitListener();
-  console.log("[AutoPush] LeetCode watcher initialized v3 ✅");
+  console.log("[AutoPush] LeetCode watcher initialized v4 ✅");
 })();
