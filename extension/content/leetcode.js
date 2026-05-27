@@ -1,5 +1,5 @@
 // ============================================================
-// AutoPush - LeetCode Content Script v2
+// AutoPush - LeetCode Content Script v3 (Fixed)
 // ============================================================
 
 (function () {
@@ -8,11 +8,13 @@
 
   function getLangExtension(lang) {
     const map = {
+      "cpp": "cpp", "java": "java", "python": "py", "python3": "py",
+      "c": "c", "csharp": "cs", "javascript": "js", "typescript": "ts",
+      "php": "php", "swift": "swift", "kotlin": "kt", "dart": "dart",
+      "golang": "go", "ruby": "rb", "scala": "scala", "rust": "rs",
+      "racket": "rkt", "erlang": "erl", "elixir": "ex", "mysql": "sql",
       "C++": "cpp", "Java": "java", "Python": "py", "Python3": "py",
-      "C": "c", "C#": "cs", "JavaScript": "js", "TypeScript": "ts",
-      "PHP": "php", "Swift": "swift", "Kotlin": "kt", "Dart": "dart",
-      "Go": "go", "Ruby": "rb", "Scala": "scala", "Rust": "rs",
-      "Racket": "rkt", "Erlang": "erl", "Elixir": "ex", "MySQL": "sql",
+      "JavaScript": "js", "TypeScript": "ts",
     };
     return map[lang] || "txt";
   }
@@ -22,16 +24,47 @@
     return match ? match[1] : null;
   }
 
+  // ✅ FIXED: Use GraphQL instead of broken REST API
   async function checkLatestSubmission(slug) {
     try {
-      const resp = await fetch(
-        "https://leetcode.com/api/submissions/?offset=0&limit=1&slug=" + slug,
-        { credentials: "include" }
-      );
+      const resp = await fetch("https://leetcode.com/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          query: `query recentSubmissions($titleSlug: String!) {
+            submissionList(offset: 0, limit: 1, questionSlug: $titleSlug) {
+              submissions {
+                id
+                statusDisplay
+                lang
+                runtime
+                memory
+                code
+                timestamp
+              }
+            }
+          }`,
+          variables: { titleSlug: slug },
+        }),
+      });
+
       if (!resp.ok) return null;
       const data = await resp.json();
-      return data.submissions_dump ? data.submissions_dump[0] : null;
+      const subs = data?.data?.submissionList?.submissions;
+      if (!subs || subs.length === 0) return null;
+
+      const s = subs[0];
+      return {
+        id: s.id,
+        status_display: s.statusDisplay,
+        lang: s.lang,
+        runtime: s.runtime,
+        memory: s.memory,
+        code: s.code,
+      };
     } catch (e) {
+      console.error("[AutoPush] GraphQL submission fetch error:", e);
       return null;
     }
   }
@@ -160,5 +193,5 @@
   }
 
   attachSubmitListener();
-  console.log("[AutoPush] LeetCode watcher initialized v2 ✅");
+  console.log("[AutoPush] LeetCode watcher initialized v3 ✅");
 })();
