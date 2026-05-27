@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoPush</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --green-dim: #1a4226;
+      --orange: #f0883e;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --accent: #3fb950;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      width: 380px;
+      min-height: 500px;
+      overflow-x: hidden;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #3fb950, #58a6ff);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: 14px; color: #0d1117;
+    }
+    .header-text h1 {
+      font-size: 15px; font-weight: 600; line-height: 1;
+    }
+    .header-text p {
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--red);
+      margin-left: auto;
+      transition: background 0.3s;
+    }
+    .status-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+    /* ---- Tabs ---- */
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1; padding: 10px;
+      font-size: 12px; font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ---- Panels ---- */
+    .panel { display: none; padding: 16px; }
+    .panel.active { display: block; }
+
+    /* ---- Form ---- */
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 11px; font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 5px;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+    }
+    .field input[type="password"] { letter-spacing: 2px; }
+    .field small {
+      display: block; margin-top: 4px;
+      font-size: 10px; color: var(--muted);
+    }
+    .field small a { color: var(--blue); text-decoration: none; }
+
+    /* ---- Toggle ---- */
+    .toggle-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 13px; }
+    .toggle-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .toggle {
+      position: relative; width: 36px; height: 20px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: 0.2s;
+    }
+    .slider:before {
+      content: "";
+      position: absolute;
+      width: 12px; height: 12px;
+      left: 3px; bottom: 3px;
+      background: var(--muted);
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle input:checked + .slider { background: var(--green-dim); border-color: var(--green); }
+    .toggle input:checked + .slider:before { transform: translateX(16px); background: var(--green); }
+
+    /* ---- Save button ---- */
+    .btn-save {
+      width: 100%;
+      padding: 10px;
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      color: var(--green);
+      font-family: inherit;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .btn-save:hover { background: var(--green); color: #0d1117; }
+    .btn-save:active { transform: scale(0.98); }
+
+    /* ---- Stats ---- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px; font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* ---- History list ---- */
+    .history-title {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 8px;
+    }
+    .history-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .platform-badge {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+    .platform-badge.leetcode { background: #f89f1b22; color: #f89f1b; border: 1px solid #f89f1b55; }
+    .platform-badge.codeforces { background: #58a6ff22; color: #58a6ff; border: 1px solid #58a6ff55; }
+    .history-problem { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .diff-badge {
+      font-size: 10px; padding: 2px 5px; border-radius: 4px; flex-shrink: 0;
+    }
+    .diff-badge.Easy { background: #3fb95022; color: #3fb950; }
+    .diff-badge.Medium { background: #f0883e22; color: #f0883e; }
+    .diff-badge.Hard { background: #f8514922; color: #f85149; }
+    .diff-badge.Unknown, .diff-badge.Unrated { background: #8b949e22; color: #8b949e; }
+
+    .empty-state {
+      text-align: center; padding: 32px 16px;
+      color: var(--muted); font-size: 13px;
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed; bottom: 12px; left: 16px; right: 16px;
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--green);
+      font-size: 12px; font-weight: 600;
+      text-align: center;
+      transform: translateY(60px);
+      transition: transform 0.3s ease;
+      z-index: 999;
+    }
+    .toast.show { transform: translateY(0); }
+
+    /* ---- Section divider ---- */
+    .section-title {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 10px; margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">AP</div>
+    <div class="header-text">
+      <h1>AutoPush</h1>
+      <p>LeetCode & Codeforces → GitHub</p>
+    </div>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="settings">⚙️ Setup</button>
+    <button class="tab" data-tab="options">🛠 Options</button>
+    <button class="tab" data-tab="history">📜 History</button>
+  </div>
+
+  <!-- SETUP TAB -->
+  <div class="panel active" id="tab-settings">
+    <div class="section-title">GitHub Connection</div>
+
+    <div class="field">
+      <label>GitHub Personal Access Token</label>
+      <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+      <small>
+        Needs <strong>repo</strong> scope.
+        <a href="https://github.com/settings/tokens/new" target="_blank">Generate token ↗</a>
+      </small>
+    </div>
+
+    <div class="field">
+      <label>Repository Owner</label>
+      <input type="text" id="repoOwner" placeholder="your-github-username" />
+    </div>
+
+    <div class="field">
+      <label>Repository Name</label>
+      <input type="text" id="repoName" placeholder="competitive-programming" />
+    </div>
+
+    <div class="field">
+      <label>Branch</label>
+      <input type="text" id="branch" placeholder="main" />
+    </div>
+
+    <button class="btn-save" id="saveSettings">Save Configuration</button>
+  </div>
+
+  <!-- OPTIONS TAB -->
+  <div class="panel" id="tab-options">
+    <div class="section-title">Folder Structure</div>
+    <div class="field">
+      <label>Organize files by</label>
+      <select id="folderStyle">
+        <option value="platform/difficulty">Platform → Difficulty (recommended)</option>
+        <option value="platform/language">Platform → Language</option>
+        <option value="flat">Flat (no subfolders)</option>
+      </select>
+    </div>
+
+    <div class="section-title">Commit Message</div>
+    <div class="field">
+      <label>Commit template</label>
+      <select id="commitTemplate">
+        <option value="default">✅ Platform: Title [Difficulty] (Language)</option>
+        <option value="simple">Add Title</option>
+        <option value="detailed">Detailed with tags</option>
+      </select>
+    </div>
+
+    <div class="section-title">File Options</div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Add header comment</div>
+        <div class="toggle-desc">Problem link, difficulty & runtime at top of file</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="addHeader" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <button class="btn-save" id="saveOptions">Save Options</button>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="panel" id="tab-history">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statLeetcode">0</div>
+        <div class="stat-label">LeetCode</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statCF">0</div>
+        <div class="stat-label">Codeforces</div>
+      </div>
+    </div>
+
+    <div class="history-title">Recent Pushes</div>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="toast" id="toast">Settings saved!</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
