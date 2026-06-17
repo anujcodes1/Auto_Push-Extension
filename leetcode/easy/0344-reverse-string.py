@@ -5,8 +5,8 @@
 # Difficulty: Easy
 # Language : Python3
 # Runtime  : 3 ms
-# Memory   : 23.4 MB
-# Date     : June 16, 2026
+# Memory   : 23.3 MB
+# Date     : June 17, 2026
 # ===================================================class Solution:
     def reverseString(self, s: List[str]) -> None:
         start = 0
