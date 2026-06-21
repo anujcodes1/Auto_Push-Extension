@@ -4,9 +4,9 @@
 # Link     : https://leetcode.com/problems/find-the-highest-altitude/
 # Difficulty: Easy
 # Language : Python3
-# Runtime  : 1 ms
+# Runtime  : 3 ms
 # Memory   : 19.2 MB
-# Date     : June 19, 2026
+# Date     : June 21, 2026
 # ===================================================class Solution:
     def largestAltitude(self, gain: List[int]) -> int:
          n = len(gain)
