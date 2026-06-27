@@ -5,12 +5,11 @@
 # Difficulty: Easy
 # Language : Python3
 # Runtime  : 0 ms
-# Memory   : 19.1 MB
-# Date     : June 11, 2026
+# Memory   : 19.4 MB
+# Date     : June 27, 2026
 # ===================================================class Solution:
     def plusOne(self, digits: List[int]) -> List[int]:
-
-         for i in range(len(digits) - 1, -1, -1):
+        for i in range(len(digits) - 1, -1, -1):
 
             if digits[i] + 1 != 10:
                 digits[i] += 1
@@ -20,5 +19,3 @@
 
             if i == 0:
                 return [1] + digits
-
-        
