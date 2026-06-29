@@ -6,8 +6,7 @@
 # Language : Python3
 # Runtime  : 0 ms
 # Memory   : 19.2 MB
-# Date     : June 14, 2026
+# Date     : June 29, 2026
 # ===================================================class Solution:
     def isPowerOfTwo(self, n: int) -> bool:
         return n > 0 and not (n & (n - 1))
-        
