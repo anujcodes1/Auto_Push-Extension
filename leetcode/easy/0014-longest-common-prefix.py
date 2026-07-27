@@ -5,8 +5,8 @@
 # Difficulty: Easy
 # Language : Python3
 # Runtime  : 0 ms
-# Memory   : 19.2 MB
-# Date     : July 18, 2026
+# Memory   : 19.3 MB
+# Date     : July 27, 2026
 # ===================================================class Solution:
     def longestCommonPrefix(self, strs: List[str]) -> str:
          strs.sort()
