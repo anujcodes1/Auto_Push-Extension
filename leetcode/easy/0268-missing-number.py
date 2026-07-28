@@ -4,18 +4,12 @@
 # Link     : https://leetcode.com/problems/missing-number/
 # Difficulty: Easy
 # Language : Python3
-# Runtime  : 2 ms
-# Memory   : 20.4 MB
-# Date     : June 22, 2026
+# Runtime  : 1407 ms
+# Memory   : 20.3 MB
+# Date     : July 28, 2026
 # ===================================================class Solution:
     def missingNumber(self, nums: List[int]) -> int:
-          n = len(nums)
-          v = [-1] * (n + 1)
-          for num in nums:
-            v[num] = num
-          for i in range(len(v)):
-            if v[i] == -1:
-                return i
-          return 0
-
-        
+        n = len(nums)
+        for i in range(n+1):
+            if i not in nums:
+                 return i
