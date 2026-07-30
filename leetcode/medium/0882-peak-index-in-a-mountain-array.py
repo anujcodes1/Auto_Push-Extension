@@ -5,8 +5,8 @@
 # Difficulty: Medium
 # Language : Python3
 # Runtime  : 0 ms
-# Memory   : 31.1 MB
-# Date     : July 29, 2026
+# Memory   : 31.2 MB
+# Date     : July 30, 2026
 # ===================================================class Solution:
     def peakIndexInMountainArray(self, nums: List[int]) -> int:
         n = len(nums)
